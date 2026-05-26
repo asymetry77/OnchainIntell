@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-05-25T10:58:43.441088+00:00",
+  "total_flags": 7,
+  "scan_duration_s": 22.37,
+  "step_summaries": {
+    "step1_token_anomaly": "Flagged 5 token anomalies",
+    "step2_large_transfers": "Scanned 20 large transfers, flagged 0",
+    "step3_exchange_inflow": "Flagged 0 exchange inflow alerts",
+    "step4_vc_monitor": "Monitored 8 VCs, flagged 2 movements"
+  },
+  "top_priority": {
+    "entity_or_token": "galaxy-digital",
+    "reason": "GALAXY-DIGITAL buying $6.3M ETH | NEW position (not in 30d portfolio)",
+    "amount_usd": 6346859.95557198,
+    "priority_score": 90,
+    "source": "step4_vc_monitor"
+  },
+  "all_flags": [
+    {
+      "source": "step4_vc_monitor",
+      "entity_or_token": "galaxy-digital",
+      "reason": "GALAXY-DIGITAL buying $6.3M ETH | NEW position (not in 30d portfolio)",
+      "amount_usd": 6346859.95557198,
+      "priority_score": 90,
+      "has_named_entity": true,
+      "tx_hashes": [
+        "0x529bc9a6605f4c22d3caf5a70e021cda9ee7ac843406e19b75af8fb7baf547ea"
+      ]
+    },
+    {
+      "source": "step4_vc_monitor",
+      "entity_or_token": "galaxy-digital",
+      "reason": "GALAXY-DIGITAL buying $1.4M  | Existing position add",
+      "amount_usd": 1421832.56985,
+      "priority_score": 55,
+      "has_named_entity": true,
+      "tx_hashes": [
+        "a7b814a1be539bb4532ad7b06920e0659f8e2e0f60c8052cea91a216eec38b84"
+      ]
+    },
+    {
+      "source": "step1_trending",
+      "entity_or_token": "?",
+      "reason": "TRENDING: Unusual onchain activity detected",
+      "amount_usd": 0,
+      "priority_score": 30,
+      "has_named_entity": false,
+      "tx_hashes": []
+    },
+    {
+      "source": "step1_trending",
+      "entity_or_token": "?",
+      "reason": "TRENDING: Unusual onchain activity detected",
+      "amount_usd": 0,
+      "priority_score": 30,
+      "has_named_entity": false,
+      "tx_hashes": []
+    },
+    {
+      "source": "step1_trending",
+      "entity_or_token": "?",
+      "reason": "TRENDING: Unusual onchain activity detected",
+      "amount_usd": 0,
+      "priority_score": 30,
+      "has_named_entity": false,
+      "tx_hashes": []
+    },
+    {
+      "source": "step1_trending",
+      "entity_or_token": "?",
+      "reason": "TRENDING: Unusual onchain activity detected",
+      "amount_usd": 0,
+      "priority_score": 30,
+      "has_named_entity": false,
+      "tx_hashes": []
+    },
+    {
+      "source": "step1_trending",
+      "entity_or_token": "?",
+      "reason": "TRENDING: Unusual onchain activity detected",
+      "amount_usd": 0,
+      "priority_score": 30,
+      "has_named_entity": false,
+      "tx_hashes": []
+    }
+  ]
+}

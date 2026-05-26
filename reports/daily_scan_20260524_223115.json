@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-05-24T22:31:15.478380+00:00",
+  "total_flags": 0,
+  "scan_duration_s": 5.55,
+  "step_summaries": {
+    "step1_token_anomaly": "ERROR: 'list' object has no attribute 'get'",
+    "step2_large_transfers": "ERROR: unsupported operand type(s) for -: 'int' and 'str'",
+    "step3_exchange_inflow": "Flagged 0 exchange inflow alerts",
+    "step4_vc_monitor": "ERROR: object of type 'NoneType' has no len()"
+  },
+  "top_priority": null,
+  "all_flags": []
+}

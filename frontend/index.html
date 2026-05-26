@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnchainIntell</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0e14;
+  --bg2: #111620;
+  --bg3: #161c28;
+  --bg4: #1c2433;
+  --border: #1e2a3a;
+  --border2: #2a3a4e;
+  --text: #d4dce8;
+  --text2: #8899aa;
+  --text3: #556677;
+  --accent: #3b82f6;
+  --accent2: #06d6a0;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --cyan: #22d3ee;
+  --purple: #a78bfa;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 10px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:14px; }
+body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; overflow-x:hidden; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.app { display:flex; min-height:100vh; }
+.sidebar {
+  width:220px; background:var(--bg2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:50;
+  transition:transform 0.3s;
+}
+.sidebar .logo {
+  padding:1.25rem 1rem; font-family:var(--mono); font-weight:700; font-size:1.1rem;
+  color:var(--accent); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0.5rem;
+}
+.sidebar .logo .dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.sidebar nav { flex:1; padding:0.75rem 0.5rem; display:flex; flex-direction:column; gap:2px; }
+.sidebar .nav-item {
+  padding:0.6rem 0.75rem; border-radius:8px; cursor:pointer; font-size:0.9rem; font-weight:500;
+  color:var(--text2); transition:all 0.15s; display:flex; align-items:center; gap:0.6rem;
+}
+.sidebar .nav-item:hover { color:var(--text); background:var(--bg3); }
+.sidebar .nav-item.active { color:var(--accent); background:rgba(59,130,246,0.1); }
+.sidebar .nav-item .icon { font-size:1.1rem; width:1.3rem; text-align:center; }
+.sidebar .nav-item .badge-count {
+  margin-left:auto; background:var(--red); color:#fff; font-size:0.65rem; font-weight:700;
+  padding:0.1rem 0.4rem; border-radius:10px; min-width:18px; text-align:center;
+}
+.main { flex:1; margin-left:220px; min-height:100vh; }
+
+/* ── TOPBAR ─────────────────────────────────────────────── */
+.topbar {
+  position:sticky; top:0; z-index:40; background:var(--bg); border-bottom:1px solid var(--border);
+  padding:0 1.5rem; height:52px; display:flex; align-items:center; gap:1rem;
+}
+.topbar .title { font-size:1rem; font-weight:700; color:var(--text); }
+.topbar .subtitle { font-size:0.8rem; color:var(--text3); }
+.topbar .spacer { flex:1; }
+.topbar .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); }
+.topbar .status-text { font-family:var(--mono); font-size:0.75rem; color:var(--green); }
+.topbar .menu-btn { display:none; background:none; border:none; color:var(--text); font-size:1.4rem; cursor:pointer; }
+
+/* ── CONTENT ────────────────────────────────────────────── */
+.content { padding:1.25rem 1.5rem; max-width:1400px; }
+.page { display:none; }
+.page.active { display:block; }
+.page-title { font-size:1.3rem; font-weight:800; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem; }
+.page-title .emoji { font-size:1.1rem; }
+
+/* ── STATS ROW ──────────────────────────────────────────── */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.75rem; margin-bottom:1.25rem; }
+.stat {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:1rem; position:relative; overflow:hidden;
+}
+.stat::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2)); opacity:0.5;
+}
+.stat .label { font-size:0.7rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; }
+.stat .val { font-family:var(--mono); font-size:1.5rem; font-weight:700; margin:0.25rem 0; color:var(--text); }
+.stat .sub { font-size:0.75rem; color:var(--text3); }
+
+/* ── CARDS ───────────────────────────────────────────────── */
+.card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius);
+  margin-bottom:1rem; overflow:hidden;
+}
+.card-header {
+  padding:0.75rem 1rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h3 { font-size:0.85rem; font-weight:700; color:var(--text); }
+.card-body { padding:0.75rem 1rem; }
+.card-body.no-pad { padding:0; }
+
+/* ── TABLE ───────────────────────────────────────────────── */
+.tbl { width:100%; border-collapse:collapse; }
+.tbl th {
+  text-align:left; padding:0.55rem 0.75rem; font-size:0.7rem; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.06em; color:var(--text3);
+  border-bottom:1px solid var(--border); background:var(--bg3); white-space:nowrap;
+}
+.tbl td {
+  padding:0.55rem 0.75rem; border-bottom:1px solid var(--border);
+  font-size:0.82rem; white-space:nowrap;
+}
+.tbl tr:hover td { background:rgba(59,130,246,0.04); }
+.tbl .addr { font-family:var(--mono); font-size:0.78rem; color:var(--cyan); cursor:pointer; }
+.tbl .addr:hover { text-decoration:underline; }
+.tbl .amt { font-family:var(--mono); font-weight:600; }
+.tbl .up { color:var(--green); }
+.tbl .down { color:var(--red); }
+.tbl .dim { color:var(--text3); }
+.tbl .tag {
+  display:inline-block; padding:0.1rem 0.45rem; border-radius:4px;
+  font-size:0.7rem; font-weight:600; font-family:var(--mono);
+}
+.tag-green { background:rgba(16,185,129,0.12); color:var(--green); }
+.tag-red { background:rgba(239,68,68,0.12); color:var(--red); }
+.tag-yellow { background:rgba(245,158,11,0.12); color:var(--yellow); }
+.tag-blue { background:rgba(59,130,246,0.12); color:var(--accent); }
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.btn {
+  display:inline-flex; align-items:center; gap:0.35rem; padding:0.45rem 0.9rem;
+  border:1px solid var(--border); border-radius:7px; background:var(--bg3);
+  color:var(--text); font-family:var(--font); font-size:0.8rem; font-weight:600;
+  cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.btn:hover { border-color:var(--accent); background:var(--bg4); }
+.btn:active { transform:scale(0.97); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover { background:#2563eb; }
+.btn-sm { padding:0.3rem 0.6rem; font-size:0.75rem; }
+.btn-icon { padding:0.4rem 0.5rem; font-size:1rem; }
+.btn-group { display:flex; gap:0.4rem; flex-wrap:wrap; }
+
+/* ── INPUTS ──────────────────────────────────────────────── */
+.input-group { display:flex; gap:0.4rem; margin-bottom:0.75rem; }
+.input-group input, .input-group select {
+  padding:0.45rem 0.7rem; background:var(--bg3); border:1px solid var(--border);
+  border-radius:7px; color:var(--text); font-family:var(--mono); font-size:0.82rem;
+  outline:none; transition:border-color 0.15s; flex:1; min-width:0;
+}
+.input-group input:focus, .input-group select:focus { border-color:var(--accent); }
+.input-group input::placeholder { color:var(--text3); }
+
+/* ── LOADING / EMPTY ─────────────────────────────────────── */
+.spin { display:inline-block; width:14px; height:14px; border:2px solid var(--border2);
+  border-top-color:var(--accent); border-radius:50%; animation:spin 0.6s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.empty { text-align:center; padding:2.5rem 1rem; color:var(--text3); font-size:0.85rem; }
+.empty .icon { font-size:2rem; margin-bottom:0.5rem; opacity:0.4; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast-container { position:fixed; top:1rem; right:1rem; z-index:999; display:flex; flex-direction:column; gap:0.5rem; }
+.toast {
+  padding:0.6rem 1rem; border-radius:8px; font-size:0.82rem; font-weight:500;
+  box-shadow:var(--shadow); animation:slideIn 0.3s; max-width:320px;
+}
+.toast-ok { background:rgba(16,185,129,0.15); border:1px solid var(--green); color:var(--green); }
+.toast-err { background:rgba(239,68,68,0.15); border:1px solid var(--red); color:var(--red); }
+.toast-info { background:rgba(59,130,246,0.15); border:1px solid var(--accent); color:var(--accent); }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:60;
+  align-items:center; justify-content:center; padding:1rem;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius);
+  width:100%; max-width:500px; max-height:80vh; overflow-y:auto;
+}
+.modal-header { padding:1rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:1rem; font-weight:700; }
+.modal-close { background:none; border:none; color:var(--text3); font-size:1.2rem; cursor:pointer; }
+.modal-body { padding:1rem; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media(max-width:768px) {
+  .sidebar { transform:translateX(-100%); width:260px; }
+  .sidebar.open { transform:translateX(0); }
+  .main { margin-left:0; }
+  .topbar .menu-btn { display:block; }
+  .content { padding:1rem; }
+  .stats { grid-template-columns:repeat(2,1fr); }
+  .tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .input-group { flex-direction:column; }
+}
+@media(max-width:480px) {
+  .stats { grid-template-columns:1fr; }
+  html { font-size:13px; }
+}
+
+/* ── OVERLAY for mobile sidebar ──────────────────────────── */
+.sidebar-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:49;
+}
+.sidebar-overlay.show { display:block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><span class="dot"></span> OnchainIntell</div>
+    <nav>
+      <div class="nav-item active" data-page="dashboard"><span class="icon">◉</span> Dashboard</div>
+      <div class="nav-item" data-page="watchlist"><span class="icon">⊞</span> Watchlist</div>
+      <div class="nav-item" data-page="scanner"><span class="icon">◎</span> Token Scanner</div>
+      <div class="nav-item" data-page="alerts"><span class="icon">⚡</span> Alerts <span class="badge-count" id="alertBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-page="reports"><span class="icon">▤</span> Reports</div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <span class="title" id="pageTitle">Dashboard</span>
+      <span class="spacer"></span>
+      <span class="status-dot"></span>
+      <span class="status-text" id="connStatus">connecting...</span>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══ DASHBOARD ═══════════════════════════════════════ -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats" id="dashStats"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Trending Tokens</h3>
+            <button class="btn btn-sm" onclick="loadTrendingDash()">Refresh</button>
+          </div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="dashTrending"><thead><tr>
+              <th>#</th><th>Token</th><th>Symbol</th><th>Action</th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Recent Alerts</h3>
+            <button class="btn btn-sm" onclick="switchPage('alerts')">View All</button>
+          </div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="dashAlerts"><thead><tr>
+              <th>Wallet</th><th>Token</th><th>Amount</th><th>TX</th><th>Time</th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ WATCHLIST ═══════════════════════════════════════ -->
+      <div class="page" id="page-watchlist">
+        <div class="btn-group" style="margin-bottom:1rem">
+          <button class="btn btn-primary" onclick="runDiscovery()" id="btnDiscover">◎ Discover Wallets</button>
+          <button class="btn" onclick="takeSnapshot()" id="btnSnapshot">⊞ Take Snapshot</button>
+          <button class="btn" onclick="loadWatchlist()">↻ Refresh</button>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Add Wallet Manually</h3></div>
+          <div class="card-body">
+            <div class="input-group">
+              <input type="text" id="addAddr" placeholder="0x... wallet address">
+              <input type="text" id="addLabel" placeholder="Label (optional)" style="max-width:180px">
+              <button class="btn btn-primary" onclick="addWallet()">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Tracked Wallets <span id="wlCount" style="color:var(--text3);font-weight:400"></span></h3>
+          </div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="wlTable"><thead><tr>
+              <th>#</th><th>Address</th><th>Label</th><th>Source Token</th><th>Added</th><th></th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ WALLET DETAIL (overlay) ════════════════════════ -->
+      <div class="page" id="page-wallet">
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+          <button class="btn btn-icon" onclick="switchPage('watchlist')">←</button>
+          <span class="page-title" style="margin:0" id="walletTitle">Wallet Detail</span>
+        </div>
+        <div class="stats" id="walletStats"></div>
+        <div class="card">
+          <div class="card-header"><h3>Recent Transfers (7d)</h3></div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="walletTransfers"><thead><tr>
+              <th>Time</th><th>Amount</th><th>Token</th><th>From</th><th>To</th><th>TX Hash</th><th>Chain</th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>DEX Swaps</h3></div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="walletSwaps"><thead><tr>
+              <th>Time</th><th>Token</th><th>Amount</th><th>Chain</th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TOKEN SCANNER ══════════════════════════════════ -->
+      <div class="page" id="page-scanner">
+        <div class="input-group">
+          <input type="text" id="scanSlug" placeholder="Token slug: pepe, bitcoin, ethereum...">
+          <button class="btn btn-primary" onclick="scanToken()" id="btnScan">◎ Scan</button>
+          <button class="btn" onclick="loadTrendingScan()">Trending</button>
+        </div>
+        <div id="scanResults"></div>
+      </div>
+
+      <!-- ═══ ALERTS ══════════════════════════════════════════ -->
+      <div class="page" id="page-alerts">
+        <div class="btn-group" style="margin-bottom:1rem">
+          <button class="btn" onclick="loadAlerts()">↻ Refresh</button>
+          <select id="alertMin" onchange="loadAlerts()" style="padding:0.45rem 0.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:0.82rem">
+            <option value="100000">$100K+</option>
+            <option value="500000" selected>$500K+</option>
+            <option value="1000000">$1M+</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Large Transactions (24h)</h3></div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="alertTable"><thead><tr>
+              <th>Wallet</th><th>Label</th><th>Token</th><th>Amount</th><th>From</th><th>To</th><th>TX Hash</th><th>Time</th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ REPORTS ═════════════════════════════════════════ -->
+      <div class="page" id="page-reports">
+        <div class="btn-group" style="margin-bottom:1rem">
+          <button class="btn btn-primary" onclick="genReport('daily')" id="btnDaily">Daily Report</button>
+          <button class="btn" onclick="genReport('weekly')" id="btnWeekly">Weekly Report</button>
+          <button class="btn" onclick="genReport('monthly')" id="btnMonthly">Monthly Report</button>
+          <button class="btn" onclick="loadReports()">↻ Refresh</button>
+        </div>
+        <div id="reportOutput"></div>
+        <div class="card">
+          <div class="card-header"><h3>Saved Reports</h3></div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="reportTable"><thead><tr>
+              <th>File</th><th>Period</th><th>Generated</th><th>Wallets</th><th>Delta</th><th></th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Title</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ── HELPERS ─────────────────────────────────────────────── */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const API='';
+
+function fmt(n){
+  if(n==null||n===0)return'$0';
+  const a=Math.abs(n),s=n<0?'-':'';
+  if(a>=1e9)return`${s}$${(a/1e9).toFixed(1)}B`;
+  if(a>=1e6)return`${s}$${(a/1e6).toFixed(1)}M`;
+  if(a>=1e3)return`${s}$${(a/1e3).toFixed(1)}K`;
+  return`${s}$${a.toFixed(0)}`;
+}
+function trunc(a){return!a||a.length<16?a||'—':a.slice(0,6)+'…'+a.slice(-4);}
+function ago(ts){
+  if(!ts)return'—';
+  let ms=typeof ts==='number'?(ts>1e12?ts:ts*1000):new Date(ts).getTime();
+  const d=(Date.now()-ms)/1000;
+  if(d<60)return`${Math.floor(d)}s`;if(d<3600)return`${Math.floor(d/60)}m`;
+  if(d<86400)return`${Math.floor(d/3600)}h`;return`${Math.floor(d/86400)}d`;
+}
+function txLink(h,chain){
+  if(!h)return'—';
+  const ex={ethereum:'https://etherscan.io/tx/',solana:'https://solscan.io/tx/',bitcoin:'https://mempool.space/tx/',base:'https://basescan.org/tx/',arbitrum_one:'https://arbiscan.io/tx/',bsc:'https://bscscan.com/tx/'};
+  return`<a class="addr" href="${(ex[chain]||ex.ethereum)+h}" target="_blank">${trunc(h)}</a>`;
+}
+function dc(v){return v>=0?'up':'down';}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+function toast(msg,type='info'){
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;t.textContent=msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+/* ── API ─────────────────────────────────────────────────── */
+async function api(path,opts={}){
+  const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});
+  if(!r.ok){const e=await r.json().catch(()=>({detail:r.statusText}));throw new Error(e.detail||r.statusText);}
+  return r.json();
+}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+const pageNames={dashboard:'Dashboard',watchlist:'Wallet Watchlist',wallet:'Wallet Detail',scanner:'Token Scanner',alerts:'Alerts',reports:'Reports'};
+
+$$('.nav-item').forEach(n=>n.onclick=()=>switchPage(n.dataset.page));
+
+function switchPage(name){
+  $$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+  $$('.page').forEach(p=>p.classList.toggle('active',p.id===`page-${name}`));
+  $('#pageTitle').textContent=pageNames[name]||name;
+  if(name==='dashboard')loadDashboard();
+  if(name==='watchlist')loadWatchlist();
+  if(name==='alerts')loadAlerts();
+  if(name==='reports')loadReports();
+  if(window.innerWidth<769)toggleSidebar(false);
+}
+
+function toggleSidebar(force){
+  const sb=$('#sidebar'),ov=$('#sidebarOverlay');
+  const open=force!==undefined?force:!sb.classList.contains('open');
+  sb.classList.toggle('open',open);ov.classList.toggle('show',open);
+}
+
+/* ── DASHBOARD ───────────────────────────────────────────── */
+async function loadDashboard(){
+  try{
+    const d=await api('/api/dashboard');
+    $('#dashStats').innerHTML=`
+      <div class="stat"><div class="label">Wallets Tracked</div><div class="val">${d.wallets_tracked}</div></div>
+      <div class="stat"><div class="label">Snapshots</div><div class="val">${d.snapshots_taken}</div></div>
+      <div class="stat"><div class="label">Reports</div><div class="val">${d.reports_generated}</div></div>
+      <div class="stat"><div class="label">Alerts 24h</div><div class="val">${d.alerts_24h}</div></div>
+    `;
+    const badge=$('#alertBadge');
+    if(d.alerts_24h>0){badge.textContent=d.alerts_24h;badge.style.display='';}
+    else badge.style.display='none';
+
+    const tb=$('#dashAlerts tbody');
+    if(d.recent_alerts?.length){
+      tb.innerHTML=d.recent_alerts.map(a=>`<tr>
+        <td><span class="addr" onclick="showWallet('${a.address}')">${trunc(a.address)}</span></td>
+        <td>${a.token||'—'}</td>
+        <td class="amt up">${fmt(a.amount_usd)}</td>
+        <td>${txLink(a.tx_hash,a.chain)}</td>
+        <td class="dim">${ago(a.timestamp)}</td>
+      </tr>`).join('');
+    }else tb.innerHTML='<tr><td colspan="5" class="empty">No recent alerts</td></tr>';
+    $('#connStatus').textContent='connected';
+  }catch(e){
+    $('#dashStats').innerHTML=`<div class="stat"><div class="label">Error</div><div class="val" style="font-size:0.9rem;color:var(--red)">${e.message}</div></div>`;
+    $('#connStatus').textContent='error';
+  }
+  loadTrendingDash();
+}
+
+async function loadTrendingDash(){
+  const tb=$('#dashTrending tbody');
+  tb.innerHTML='<tr><td colspan="4" class="empty"><span class="spin"></span></td></tr>';
+  try{
+    const d=await api('/api/tokens/trending');
+    if(d.tokens?.length){
+      tb.innerHTML=d.tokens.slice(0,10).map((t,i)=>`<tr>
+        <td class="dim">${i+1}</td>
+        <td>${t.name||'?'}</td>
+        <td><span class="tag tag-blue">${(t.symbol||'?').toUpperCase()}</span></td>
+        <td><button class="btn btn-sm" onclick="$('#scanSlug').value='${t.identifier?.pricingID||t.id||''}';switchPage('scanner');scanToken()">Scan</button></td>
+      </tr>`).join('');
+    }else tb.innerHTML='<tr><td colspan="4" class="empty">No trending data</td></tr>';
+  }catch(e){tb.innerHTML=`<tr><td colspan="4" class="empty">${e.message}</td></tr>`;}
+}
+
+/* ── WATCHLIST ───────────────────────────────────────────── */
+async function loadWatchlist(){
+  const tb=$('#wlTable tbody');
+  tb.innerHTML='<tr><td colspan="6" class="empty"><span class="spin"></span></td></tr>';
+  try{
+    const d=await api('/api/watchlist');
+    const w=d.wallets||[];
+    $('#wlCount').textContent=`(${w.length})`;
+    if(w.length){
+      tb.innerHTML=w.map((x,i)=>`<tr>
+        <td class="dim">${i+1}</td>
+        <td><span class="addr" onclick="showWallet('${x.address}')">${trunc(x.address)}</span></td>
+        <td>${x.label||'—'}</td>
+        <td><span class="tag tag-yellow">${x.token_source||'—'}</span></td>
+        <td class="dim">${(x.added_at||'').slice(0,10)}</td>
+        <td><button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="rmWallet('${x.address}')">✕</button></td>
+      </tr>`).join('');
+    }else tb.innerHTML='<tr><td colspan="6" class="empty"><div class="icon">⊞</div>No wallets tracked yet.<br>Click <b>Discover Wallets</b> to auto-find insider wallets.</td></tr>';
+  }catch(e){tb.innerHTML=`<tr><td colspan="6" class="empty">${e.message}</td></tr>`;}
+}
+
+async function addWallet(){
+  const addr=$('#addAddr').value.trim();
+  if(!addr)return toast('Enter wallet address','err');
+  try{
+    await api('/api/watchlist',{method:'POST',body:JSON.stringify({address:addr,label:$('#addLabel').value.trim()})});
+    $('#addAddr').value='';$('#addLabel').value='';
+    toast('Wallet added','ok');loadWatchlist();
+  }catch(e){toast(e.message,'err');}
+}
+
+async function rmWallet(addr){
+  if(!confirm(`Remove ${trunc(addr)}?`))return;
+  try{await api(`/api/watchlist/${addr}`,{method:'DELETE'});toast('Removed','ok');loadWatchlist();}
+  catch(e){toast(e.message,'err');}
+}
+
+async function runDiscovery(){
+  const b=$('#btnDiscover');b.disabled=true;b.innerHTML='<span class="spin"></span> Discovering...';
+  try{
+    const d=await api('/api/discover',{method:'POST'});
+    toast(`Found ${d.discovered} new wallets`,'ok');loadWatchlist();
+  }catch(e){toast(e.message,'err');}
+  finally{b.disabled=false;b.innerHTML='◎ Discover Wallets';}
+}
+
+async function takeSnapshot(){
+  const b=$('#btnSnapshot');b.disabled=true;b.innerHTML='<span class="spin"></span> Snapshotting...';
+  try{
+    const d=await api('/api/snapshot',{method:'POST'});
+    toast(`Snapshot: ${d.wallets} wallets saved`,'ok');
+  }catch(e){toast(e.message,'err');}
+  finally{b.disabled=false;b.innerHTML='⊞ Take Snapshot';}
+}
+
+/* ── WALLET DETAIL ───────────────────────────────────────── */
+async function showWallet(addr){
+  switchPage('wallet');
+  $('#walletTitle').textContent=`Wallet: ${trunc(addr)}`;
+  $('#walletStats').innerHTML='<div class="stat"><div class="label">Loading...</div><div class="val"><span class="spin"></span></div></div>';
+  $('#walletTransfers tbody').innerHTML='';$('#walletSwaps tbody').innerHTML='';
+  try{
+    const d=await api(`/api/wallet/${addr}`);
+    const w=d.wallet,b=w.balance||{};
+    $('#walletStats').innerHTML=`
+      <div class="stat"><div class="label">Address</div><div class="val" style="font-size:0.8rem;word-break:break-all">${w.address}</div></div>
+      <div class="stat"><div class="label">Label</div><div class="val" style="font-size:1rem">${w.label||'Unknown'}</div></div>
+      <div class="stat"><div class="label">Balance</div><div class="val up">${fmt(b.total_usd||0)}</div></div>
+      <div class="stat"><div class="label">Source Token</div><div class="val" style="font-size:1rem">${w.token_source||'—'}</div></div>
+    `;
+    const tt=$('#walletTransfers tbody');
+    if(w.transfers?.length){
+      tt.innerHTML=w.transfers.map(t=>`<tr>
+        <td class="dim">${ago(t.blockTimestamp)}</td>
+        <td class="amt up">${fmt(t.historicalUSD)}</td>
+        <td><span class="tag tag-blue">${t.tokenSymbol||'?'}</span></td>
+        <td><span class="addr">${trunc(t.fromAddress)}</span></td>
+        <td><span class="addr">${trunc(t.toAddress)}</span></td>
+        <td>${txLink(t.transactionHash,t.chain)}</td>
+        <td class="dim">${t.chain||'—'}</td>
+      </tr>`).join('');
+    }else tt.innerHTML='<tr><td colspan="7" class="empty">No transfers in 7d</td></tr>';
+    const st=$('#walletSwaps tbody');
+    if(w.swaps?.length){
+      st.innerHTML=w.swaps.map(s=>`<tr>
+        <td class="dim">${ago(s.timestamp)}</td>
+        <td><span class="tag tag-blue">${s.tokenSymbol||'?'}</span></td>
+        <td class="amt up">${fmt(s.historicalUSD)}</td>
+        <td class="dim">${s.chain||'—'}</td>
+      </tr>`).join('');
+    }else st.innerHTML='<tr><td colspan="4" class="empty">No DEX swaps</td></tr>';
+  }catch(e){
+    $('#walletStats').innerHTML=`<div class="stat"><div class="label">Error</div><div class="val" style="color:var(--red)">${e.message}</div></div>`;
+  }
+}
+
+/* ── TOKEN SCANNER ───────────────────────────────────────── */
+async function scanToken(){
+  const slug=$('#scanSlug').value.trim();
+  if(!slug)return toast('Enter token slug','err');
+  const el=$('#scanResults');
+  el.innerHTML='<div class="card"><div class="card-body" style="text-align:center"><span class="spin"></span> Scanning...</div></div>';
+  try{
+    const d=await api(`/api/token/${slug}/holders`);
+    let h='';
+    if(d.watchlist_holders?.length){
+      h+=`<div class="card"><div class="card-header"><h3 style="color:var(--yellow)">⚠ Watchlist Overlap (${d.watchlist_holders.length})</h3></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Address</th><th>Label</th><th>Balance</th></tr></thead><tbody>
+      ${d.watchlist_holders.map(x=>`<tr><td><span class="addr" onclick="showWallet('${x.address}')">${trunc(x.address)}</span></td><td>${x.arkhamLabel||'—'}</td><td class="amt up">${fmt(x.balanceUSD||x.holdingUSD||0)}</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+    }
+    if(d.holders?.length){
+      h+=`<div class="card"><div class="card-header"><h3>Top Holders</h3></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Address</th><th>Label</th><th>Balance</th></tr></thead><tbody>
+      ${d.holders.slice(0,15).map(x=>`<tr><td><span class="addr">${trunc(x.address||'')}</span></td><td>${x.arkhamLabel||x.name||'—'}</td><td class="amt up">${fmt(x.balanceUSD||x.holdingUSD||0)}</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+    }
+    if(d.top_flow?.length){
+      h+=`<div class="card"><div class="card-header"><h3>Top Flow (24h)</h3></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Address</th><th>Inflow</th><th>Outflow</th></tr></thead><tbody>
+      ${d.top_flow.slice(0,15).map(f=>{let a=f.address;if(typeof a==='object')a=a?.address||'';return`<tr><td><span class="addr" onclick="showWallet('${a}')">${trunc(a)}</span></td><td class="amt up">${fmt(f.inUSD||0)}</td><td class="amt down">${fmt(f.outUSD||0)}</td></tr>`;}).join('')}
+      </tbody></table></div></div></div>`;
+    }
+    el.innerHTML=h||'<div class="card"><div class="card-body" class="empty" style="text-align:center;padding:2rem;color:var(--text3)">No data for this token.</div></div>';
+  }catch(e){el.innerHTML=`<div class="card"><div class="card-body" style="color:var(--red)">${e.message}</div></div>`;}
+}
+
+async function loadTrendingScan(){
+  const el=$('#scanResults');
+  el.innerHTML='<div class="card"><div class="card-body" style="text-align:center"><span class="spin"></span></div></div>';
+  try{
+    const d=await api('/api/tokens/trending');
+    if(d.tokens?.length){
+      el.innerHTML=`<div class="card"><div class="card-header"><h3>Trending Tokens</h3></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Symbol</th><th>Name</th><th></th></tr></thead><tbody>
+      ${d.tokens.map(t=>`<tr><td><span class="tag tag-blue">${(t.symbol||'?').toUpperCase()}</span></td><td>${t.name||'?'}</td><td><button class="btn btn-sm" onclick="$('#scanSlug').value='${t.identifier?.pricingID||t.id||''}';scanToken()">Scan</button></td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+    }else el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;color:var(--text3)">No trending tokens</div></div>';
+  }catch(e){el.innerHTML=`<div class="card"><div class="card-body" style="color:var(--red)">${e.message}</div></div>`;}
+}
+
+/* ── ALERTS ──────────────────────────────────────────────── */
+async function loadAlerts(){
+  const tb=$('#alertTable tbody');
+  tb.innerHTML='<tr><td colspan="8" class="empty"><span class="spin"></span></td></tr>';
+  try{
+    const d=await api(`/api/alerts?min_usd=${$('#alertMin').value}`);
+    if(d.alerts?.length){
+      tb.innerHTML=d.alerts.map(a=>`<tr>
+        <td><span class="addr" onclick="showWallet('${a.address}')">${trunc(a.address)}</span></td>
+        <td>${a.label||'—'}</td>
+        <td><span class="tag tag-blue">${a.token||'—'}</span></td>
+        <td class="amt up">${fmt(a.amount_usd)}</td>
+        <td><span class="addr">${trunc(a.from)}</span></td>
+        <td><span class="addr">${trunc(a.to)}</span></td>
+        <td>${txLink(a.tx_hash,a.chain)}</td>
+        <td class="dim">${ago(a.timestamp)}</td>
+      </tr>`).join('');
+    }else tb.innerHTML='<tr><td colspan="8" class="empty"><div class="icon">⚡</div>No alerts above threshold</td></tr>';
+  }catch(e){tb.innerHTML=`<tr><td colspan="8" class="empty">${e.message}</td></tr>`;}
+}
+
+/* ── REPORTS ─────────────────────────────────────────────── */
+async function genReport(period){
+  const b=$(`#btn${period.charAt(0).toUpperCase()+period.slice(1)}`);
+  b.disabled=true;b.innerHTML='<span class="spin"></span>';
+  try{
+    const d=await api('/api/report/generate',{method:'POST',body:JSON.stringify({period})});
+    const r=d.report,s=r.summary||{};
+    let h=`<div class="stats">
+      <div class="stat"><div class="label">Period</div><div class="val" style="font-size:1rem">${r.period}</div></div>
+      <div class="stat"><div class="label">Wallets</div><div class="val">${s.total_wallets||0}</div></div>
+      <div class="stat"><div class="label">Delta</div><div class="val ${dc(s.total_delta_usd||0)}">${fmt(s.total_delta_usd||0)}</div><div class="sub">${(s.total_delta_pct||0).toFixed(1)}%</div></div>
+      <div class="stat"><div class="label">Gainers / Losers</div><div class="val"><span class="up">${s.gainers||0}</span> / <span class="down">${s.losers||0}</span></div></div>
+    </div>`;
+    if(r.wallets?.length){
+      h+=`<div class="card"><div class="card-header"><h3>Wallet Changes</h3></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Address</th><th>Label</th><th>Current</th><th>Previous</th><th>Delta</th><th>%</th></tr></thead><tbody>
+      ${r.wallets.map(w=>`<tr><td><span class="addr" onclick="showWallet('${w.address}')">${trunc(w.address)}</span></td><td>${w.label||'—'}</td><td class="amt">${fmt(w.current_usd)}</td><td class="dim">${fmt(w.previous_usd)}</td><td class="amt ${dc(w.delta_usd)}">${fmt(w.delta_usd)}</td><td class="${dc(w.delta_pct)}">${w.delta_pct.toFixed(1)}%</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+    }
+    $('#reportOutput').innerHTML=h;loadReports();toast('Report generated','ok');
+  }catch(e){$('#reportOutput').innerHTML=`<div class="card"><div class="card-body" style="color:var(--red)">${e.message}</div></div>`;}
+  finally{b.disabled=false;b.innerHTML=`${period.charAt(0).toUpperCase()+period.slice(1)} Report`;}
+}
+
+async function loadReports(){
+  const tb=$('#reportTable tbody');
+  try{
+    const d=await api('/api/reports');
+    if(d.reports?.length){
+      tb.innerHTML=d.reports.map(r=>{
+        const dl=r.total_delta_usd||0;
+        return`<tr><td class="dim" style="font-size:0.75rem">${r.filename}</td><td><span class="tag tag-blue">${r.period}</span></td><td class="dim">${(r.generated_at||'').slice(0,16)}</td><td>${r.total_wallets||0}</td><td class="amt ${dc(dl)}">${fmt(dl)}</td><td><button class="btn btn-sm" onclick="viewReport('${r.filename}')">View</button></td></tr>`;
+      }).join('');
+    }else tb.innerHTML='<tr><td colspan="6" class="empty">No reports yet. Generate one above.</td></tr>';
+  }catch(e){tb.innerHTML=`<tr><td colspan="6" class="empty">${e.message}</td></tr>`;}
+}
+
+async function viewReport(fn){
+  try{
+    const d=await api(`/api/reports/${fn}`);
+    const r=d.report,s=r.summary||{};
+    showModal(`${r.period} Report`,`
+      <div class="stats" style="margin-bottom:1rem">
+        <div class="stat"><div class="label">Wallets</div><div class="val">${s.total_wallets||0}</div></div>
+        <div class="stat"><div class="label">Delta</div><div class="val ${dc(s.total_delta_usd||0)}">${fmt(s.total_delta_usd||0)}</div></div>
+      </div>
+      ${r.wallets?.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Address</th><th>Label</th><th>Delta</th></tr></thead><tbody>${r.wallets.slice(0,20).map(w=>`<tr><td class="addr">${trunc(w.address)}</td><td>${w.label||'—'}</td><td class="amt ${dc(w.delta_usd)}">${fmt(w.delta_usd)}</td></tr>`).join('')}</tbody></table></div>`:''}
+    `);
+  }catch(e){toast(e.message,'err');}
+}
+
+/* ── MODAL ───────────────────────────────────────────────── */
+function showModal(title,body){
+  $('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;
+  $('#modalOverlay').classList.add('show');
+}
+function closeModal(){$('#modalOverlay').classList.remove('show');}
+
+/* ── INIT ────────────────────────────────────────────────── */
+loadDashboard();
+</script>
+</body>
+</html>

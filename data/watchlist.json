@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "wallets": [
+    {
+      "address": "0x20FE51A9229EEf2cF8Ad9E89d91CAb9312cF3b7A",
+      "label": "Hot Wallet",
+      "added_at": "2026-05-25T23:44:13.089713+00:00",
+      "token_source": "aero",
+      "token_name": ""
+    },
+    {
+      "address": "0x1985EA6E9c68E1C272d8209f3B478AC2Fdb25c87",
+      "label": "Hot Wallet",
+      "added_at": "2026-05-25T23:44:13.434744+00:00",
+      "token_source": "aero",
+      "token_name": ""
+    },
+    {
+      "address": "0xCDBe19a6EF1B633BE744920C93eE40521d5cf2A6",
+      "label": "CLPool",
+      "added_at": "2026-05-25T23:44:13.809433+00:00",
+      "token_source": "aero",
+      "token_name": ""
+    },
+    {
+      "address": "0x8d05E14Ae19546F9F22D3C5b3470EF3337BaA57C",
+      "label": "",
+      "added_at": "2026-05-25T23:44:14.134460+00:00",
+      "token_source": "aero",
+      "token_name": ""
+    },
+    {
+      "address": "0xb6AC53634C4E88E5770D4BFe8f38f31b49418A34",
+      "label": "",
+      "added_at": "2026-05-25T23:44:14.477508+00:00",
+      "token_source": "aero",
+      "token_name": ""
+    },
+    {
+      "address": "0x238a358808379702088667322f80aC48bAd5e6c4",
+      "label": "Vault",
+      "added_at": "2026-05-25T23:44:16.196978+00:00",
+      "token_source": "nex",
+      "token_name": ""
+    },
+    {
+      "address": "0x286da9568057420df90c5489E51cBB82B29F0301",
+      "label": "Proxy (EIP-1967 Transparent)",
+      "added_at": "2026-05-25T23:44:16.533261+00:00",
+      "token_source": "nex",
+      "token_name": ""
+    },
+    {
+      "address": "0x031942f26A094BE40414f442a2f1295e3A5c1680",
+      "label": "Proxy (EIP-1967 Transparent)",
+      "added_at": "2026-05-25T23:44:16.964870+00:00",
+      "token_source": "nex",
+      "token_name": ""
+    },
+    {
+      "address": "0xaa86268030AAe432ac471f220080Ba3E46b52B43",
+      "label": "",
+      "added_at": "2026-05-25T23:44:17.338749+00:00",
+      "token_source": "nex",
+      "token_name": ""
+    },
+    {
+      "address": "0xDbd61ebAa56E0101Df8E4D0eCcd32C719C033882",
+      "label": "",
+      "added_at": "2026-05-25T23:44:17.681244+00:00",
+      "token_source": "nex",
+      "token_name": ""
+    },
+    {
+      "address": "0x9999b0CdD35d7F3B281BA02EfC0d228486940515",
+      "label": "",
+      "added_at": "2026-05-25T23:44:19.876148+00:00",
+      "token_source": "slx",
+      "token_name": ""
+    },
+    {
+      "address": "0xBD97306A087ED0c46b783cFBFDcDc6C12C7a2866",
+      "label": "",
+      "added_at": "2026-05-25T23:44:20.298283+00:00",
+      "token_source": "slx",
+      "token_name": ""
+    },
+    {
+      "address": "0x6D04698d42950Cc1eb6AbC26A9Ec32521f5A3E77",
+      "label": "",
+      "added_at": "2026-05-25T23:44:20.647285+00:00",
+      "token_source": "slx",
+      "token_name": ""
+    },
+    {
+      "address": "0xb2143978738025c50777e4245794f878117EC61C",
+      "label": "",
+      "added_at": "2026-05-25T23:44:21.960854+00:00",
+      "token_source": "bsb",
+      "token_name": ""
+    },
+    {
+      "address": "0x4e9f1B3623f5E89c87B28b57aB31295362f9B36A",
+      "label": "",
+      "added_at": "2026-05-25T23:44:22.310175+00:00",
+      "token_source": "bsb",
+      "token_name": ""
+    }
+  ],
+  "last_discovery": "2026-05-25T23:44:22.313881+00:00",
+  "last_snapshot": "2026-05-26T06:06:43.016324+00:00"
+}
