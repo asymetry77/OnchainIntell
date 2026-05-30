@@ -57,4 +57,24 @@ class MiMoClient:
             raw = raw.split("```json")[1].split("```")[0]
         elif "```" in raw:
             raw = raw.split("```")[1].split("```")[0]
-        return json.loads(raw.strip())
+        raw = raw.strip()
+
+        # Try to find JSON object in the response
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start >= 0 and end > start:
+            raw = raw[start:end]
+
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON from MiMo response: {e}")
+            logger.warning(f"Raw response: {raw[:500]}")
+            # Return a fallback dict with the raw text as caption
+            return {
+                "caption": raw,
+                "hashtags": [],
+                "thread": [],
+                "confidence": "low",
+                "signal_type": "unknown",
+            }
