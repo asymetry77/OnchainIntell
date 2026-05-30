@@ -225,8 +225,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
     <nav>
       <div class="nav-item active" data-page="dashboard"><span class="icon">◉</span> Dashboard</div>
       <div class="nav-item" data-page="watchlist"><span class="icon">⊞</span> Watchlist</div>
+      <div class="nav-item" data-page="signals"><span class="icon">◈</span> Signals</div>
       <div class="nav-item" data-page="scanner"><span class="icon">◎</span> Token Scanner</div>
       <div class="nav-item" data-page="alerts"><span class="icon">⚡</span> Alerts <span class="badge-count" id="alertBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-page="caption"><span class="icon">✎</span> Caption</div>
       <div class="nav-item" data-page="reports"><span class="icon">▤</span> Reports</div>
     </nav>
   </aside>
@@ -354,6 +356,74 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
         </div>
       </div>
 
+      <!-- ═══ SIGNALS ══════════════════════════════════════════ -->
+      <div class="page" id="page-signals">
+        <div class="btn-group" style="margin-bottom:1rem">
+          <button class="btn btn-primary" onclick="loadSignals()">⚡ Detect Signals</button>
+          <select id="signalHours" style="padding:0.45rem 0.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:0.82rem">
+            <option value="6">6h</option>
+            <option value="24" selected>24h</option>
+            <option value="168">7d</option>
+          </select>
+          <select id="signalMinUsd" style="padding:0.45rem 0.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:0.82rem">
+            <option value="50000">$50K+</option>
+            <option value="100000" selected>$100K+</option>
+            <option value="500000">$500K+</option>
+            <option value="1000000">$1M+</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Onchain Signals</h3></div>
+          <div class="card-body no-pad">
+            <div class="tbl-wrap"><table class="tbl" id="signalTable"><thead><tr>
+              <th>Score</th><th>Type</th><th>Entity/Token</th><th>Action</th><th>Amount</th><th>TX Hash</th><th>Time</th><th></th>
+            </tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ CAPTION ══════════════════════════════════════════ -->
+      <div class="page" id="page-caption">
+        <div class="card">
+          <div class="card-header"><h3>Generate AI Caption</h3></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">Signal Type</label>
+                <select id="capType" style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+                  <option value="whale_buy">Whale Buy</option>
+                  <option value="vc_movement">VC Movement</option>
+                  <option value="accumulation">Accumulation</option>
+                  <option value="anomaly">Anomaly</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">Entity / Label</label>
+                <input id="capEntity" placeholder="e.g. Galaxy Digital" style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">Token</label>
+                <input id="capToken" placeholder="e.g. ETH" style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">Amount USD</label>
+                <input id="capAmount" type="number" placeholder="6300000" style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">TX Hash</label>
+                <input id="capTxHash" placeholder="0x..." style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text3);display:block;margin-bottom:0.3rem">Chain</label>
+                <input id="capChain" placeholder="ethereum" style="width:100%;padding:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono)">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="generateCaption()" style="width:100%">Generate Caption</button>
+          </div>
+        </div>
+        <div id="captionOutput"></div>
+      </div>
+
       <!-- ═══ REPORTS ═════════════════════════════════════════ -->
       <div class="page" id="page-reports">
         <div class="btn-group" style="margin-bottom:1rem">
@@ -435,7 +505,7 @@ async function api(path,opts={}){
 }
 
 /* ── NAV ─────────────────────────────────────────────────── */
-const pageNames={dashboard:'Dashboard',watchlist:'Wallet Watchlist',wallet:'Wallet Detail',scanner:'Token Scanner',alerts:'Alerts',reports:'Reports'};
+const pageNames={dashboard:'Dashboard',watchlist:'Wallet Watchlist',wallet:'Wallet Detail',signals:'Onchain Signals',scanner:'Token Scanner',alerts:'Alerts',caption:'AI Caption Generator',reports:'Reports'};
 
 $$('.nav-item').forEach(n=>n.onclick=()=>switchPage(n.dataset.page));
 
@@ -462,9 +532,9 @@ async function loadDashboard(){
     const d=await api('/api/dashboard');
     $('#dashStats').innerHTML=`
       <div class="stat"><div class="label">Wallets Tracked</div><div class="val">${d.wallets_tracked}</div></div>
+      <div class="stat"><div class="label">Alerts 24h</div><div class="val">${d.alerts_24h}</div></div>
       <div class="stat"><div class="label">Snapshots</div><div class="val">${d.snapshots_taken}</div></div>
       <div class="stat"><div class="label">Reports</div><div class="val">${d.reports_generated}</div></div>
-      <div class="stat"><div class="label">Alerts 24h</div><div class="val">${d.alerts_24h}</div></div>
     `;
     const badge=$('#alertBadge');
     if(d.alerts_24h>0){badge.textContent=d.alerts_24h;badge.style.display='';}
@@ -638,6 +708,76 @@ async function loadTrendingScan(){
       ${d.tokens.map(t=>`<tr><td><span class="tag tag-blue">${(t.symbol||'?').toUpperCase()}</span></td><td>${t.name||'?'}</td><td><button class="btn btn-sm" onclick="$('#scanSlug').value='${t.identifier?.pricingID||t.id||''}';scanToken()">Scan</button></td></tr>`).join('')}
       </tbody></table></div></div></div>`;
     }else el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;color:var(--text3)">No trending tokens</div></div>';
+  }catch(e){el.innerHTML=`<div class="card"><div class="card-body" style="color:var(--red)">${e.message}</div></div>`;}
+}
+
+/* ── SIGNALS ─────────────────────────────────────────────── */
+async function loadSignals(){
+  const tb=$('#signalTable tbody');
+  tb.innerHTML='<tr><td colspan="8" class="empty"><span class="spin"></span> Detecting signals...</td></tr>';
+  try{
+    const h=$('#signalHours').value;
+    const u=$('#signalMinUsd').value;
+    const d=await api(`/api/signals?hours=${h}&min_usd=${u}`);
+    if(d.signals?.length){
+      tb.innerHTML=d.signals.map(s=>{
+        const sc=s.score||0;
+        const clr=sc>=70?'var(--green)':sc>=50?'var(--yellow)':'var(--text3)';
+        const hash=s.tx_hash?s.tx_hash.slice(0,10)+'…':'—';
+        return`<tr>
+          <td><span style="color:${clr};font-weight:700;font-family:var(--mono)">${sc}</span></td>
+          <td><span class="tag tag-blue">${s.signal_type}</span></td>
+          <td>${s.entity||s.token||'—'}</td>
+          <td>${s.action||'—'}</td>
+          <td class="amt">${fmt(s.amount_usd)}</td>
+          <td><span class="addr">${hash}</span></td>
+          <td class="dim">${ago(s.timestamp)}</td>
+          <td><button class="btn btn-sm" onclick="captionFromSignal(${JSON.stringify(s).replace(/"/g,'&quot;')})">✎</button></td>
+        </tr>`;}).join('');
+    }else tb.innerHTML='<tr><td colspan="8" class="empty">No signals detected in this window</td></tr>';
+  }catch(e){tb.innerHTML=`<tr><td colspan="8" class="empty" style="color:var(--red)">${e.message}</td></tr>`;}
+}
+
+function captionFromSignal(s){
+  switchPage('caption');
+  $('#capType').value=s.signal_type||'whale_buy';
+  $('#capEntity').value=s.entity||s.label||'';
+  $('#capToken').value=s.token||'';
+  $('#capAmount').value=s.amount_usd||0;
+  $('#capTxHash').value=s.tx_hash||'';
+  $('#capChain').value=s.chain||'';
+  generateCaption();
+}
+
+async function generateCaption(){
+  const el=$('#captionOutput');
+  el.innerHTML='<div class="card"><div class="card-body" style="text-align:center"><span class="spin"></span> Generating with MiMo AI...</div></div>';
+  try{
+    const body={
+      signal_type:$('#capType').value,
+      entity:$('#capEntity').value,
+      label:$('#capEntity').value,
+      token:$('#capToken').value,
+      amount_usd:parseFloat($('#capAmount').value)||0,
+      tx_hash:$('#capTxHash').value,
+      chain:$('#capChain').value,
+      action:'bought'
+    };
+    const d=await api('/api/caption/generate',{method:'POST',body:JSON.stringify(body)});
+    if(d.caption){
+      const c=d.caption;
+      el.innerHTML=`<div class="card">
+        <div class="card-header"><h3>Generated Caption</h3>
+          <button class="btn btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('capText').textContent);toast('Copied!','ok')">Copy</button>
+        </div>
+        <div class="card-body">
+          <div id="capText" style="font-size:1rem;line-height:1.6;white-space:pre-wrap;margin-bottom:1rem">${c.caption||''}</div>
+          ${c.hashtags?.length?`<div style="margin-bottom:0.5rem">${c.hashtags.map(h=>'<span class="tag tag-blue">'+h+'</span>').join(' ')}</div>`:''}
+          ${c.thread?.length?`<div style="margin-top:1rem"><div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem">THREAD</div>${c.thread.map(t=>'<div style="padding:0.5rem;background:var(--bg3);border-radius:7px;margin-bottom:0.5rem;font-size:0.9rem">'+t+'</div>').join('')}</div>`:''}
+          <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--text3)">Confidence: ${c.confidence||'—'} | Type: ${c.signal_type||'—'}</div>
+        </div>
+      </div>`;
+    }else el.innerHTML='<div class="card"><div class="card-body">No caption generated</div></div>';
   }catch(e){el.innerHTML=`<div class="card"><div class="card-body" style="color:var(--red)">${e.message}</div></div>`;}
 }
 

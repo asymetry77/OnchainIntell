@@ -31,11 +31,17 @@ class ReportGenerator:
         except (json.JSONDecodeError, OSError):
             return None
 
-    def _find_closest_snapshot(self, target_date: datetime) -> dict | None:
+    def _find_closest_snapshot(self, target_date: datetime, exclude_date: str = None) -> dict | None:
+        """Find closest snapshot to target_date, optionally excluding a specific date."""
         for delta in range(0, 8):
             for direction in [0, -1, 1]:
+                if delta == 0 and direction != 0:
+                    continue
                 d = target_date + timedelta(days=delta * direction)
-                snap = self._load_snapshot(d.strftime("%Y-%m-%d"))
+                date_str = d.strftime("%Y-%m-%d")
+                if date_str == exclude_date:
+                    continue
+                snap = self._load_snapshot(date_str)
                 if snap:
                     return snap
         return None
@@ -97,9 +103,41 @@ class ReportGenerator:
         if not current:
             return {"error": "No current snapshot found. Run snapshot first."}
 
-        previous = self._find_closest_snapshot(now - timedelta(days=delta_days))
+        current_date = current.get("timestamp", "")[:10]
+        previous = self._find_closest_snapshot(now - timedelta(days=delta_days), exclude_date=current_date)
         if not previous:
-            return {"error": f"No previous snapshot found for {period} comparison."}
+            # Only one snapshot exists — return single-snapshot report
+            wallets = current.get("wallets", [])
+            report = {
+                "period": period,
+                "generated_at": now.isoformat(),
+                "current_snapshot": current.get("timestamp", ""),
+                "previous_snapshot": None,
+                "summary": {
+                    "total_wallets": len(wallets),
+                    "total_current_usd": sum(self._parse_usd(w.get("total_usd", 0)) for w in wallets),
+                    "total_previous_usd": 0,
+                    "total_delta_usd": 0,
+                    "total_delta_pct": 0,
+                    "gainers": 0,
+                    "losers": 0,
+                    "note": "Only one snapshot exists. Take another snapshot later to see changes.",
+                },
+                "wallets": [{
+                    "address": w["address"],
+                    "label": w.get("label", ""),
+                    "current_usd": self._parse_usd(w.get("total_usd", 0)),
+                    "previous_usd": 0,
+                    "delta_usd": 0,
+                    "delta_pct": 0,
+                    "activity_24h": w.get("activity_24h", {}),
+                } for w in wallets],
+            }
+            ts = now.strftime("%Y%m%d_%H%M%S")
+            path = self.reports_dir / f"{ts}_{period}_report.json"
+            path.write_text(json.dumps(report, indent=2, default=str))
+            report["saved"] = str(path)
+            return report
 
         comparisons = self._compare_snapshots(current, previous)
         total_current = sum(r["current_usd"] for r in comparisons)

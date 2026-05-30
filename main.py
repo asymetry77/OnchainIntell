@@ -407,6 +407,90 @@ def list_reports():
     console.print(table)
 
 
+# ── SIGNALS ──────────────────────────────────────────────────────────────────
+
+@cli.command()
+@click.option("--hours", default=24, help="Lookback window in hours")
+@click.option("--min-usd", default=100000, help="Minimum USD threshold")
+def signals(hours, min_usd):
+    """Detect onchain signals: whale buys, VC movements, accumulation."""
+    from core.signal_detector import SignalDetector
+
+    console.print(f"[bold]Scanning for signals ({hours}h, min ${min_usd:,.0f})...[/bold]")
+    detector = SignalDetector()
+    results = detector.detect_all(hours=hours, min_usd=min_usd)
+
+    if not results:
+        console.print("[dim]No signals detected.[/dim]")
+        return
+
+    table = Table(title=f"Signals ({len(results)})")
+    table.add_column("Score", style="bold")
+    table.add_column("Type", style="cyan")
+    table.add_column("Entity/Token")
+    table.add_column("Action")
+    table.add_column("Amount", style="bold")
+    table.add_column("TX Hash", style="dim")
+
+    for s in results[:20]:
+        score = s.get("score", 0)
+        color = "green" if score >= 70 else "yellow" if score >= 50 else "dim"
+        table.add_row(
+            f"[{color}]{score}[/{color}]",
+            s.get("signal_type", ""),
+            s.get("entity") or s.get("token", ""),
+            s.get("action", ""),
+            format_usd(s.get("amount_usd", 0)),
+            (s.get("tx_hash", "") or "")[:16],
+        )
+    console.print(table)
+
+
+# ── CAPTION ──────────────────────────────────────────────────────────────────
+
+@cli.command()
+@click.option("--type", "signal_type", default="whale_buy",
+              type=click.Choice(["whale_buy", "vc_movement", "accumulation", "anomaly"]))
+@click.option("--entity", default="", help="Entity name")
+@click.option("--token", default="", help="Token symbol")
+@click.option("--amount", default=0.0, help="Amount in USD")
+@click.option("--tx-hash", default="", help="Transaction hash")
+@click.option("--description", default="", help="Signal description")
+def caption(signal_type, entity, token, amount, tx_hash, description):
+    """Generate AI caption for a signal."""
+    from core.caption_generator import CaptionGenerator
+
+    gen = CaptionGenerator()
+    signal = {
+        "signal_type": signal_type,
+        "entity": entity,
+        "label": entity,
+        "action": "bought",
+        "amount_usd": amount,
+        "token": token,
+        "tx_hash": tx_hash,
+        "description": description,
+    }
+
+    console.print("[bold]Generating caption...[/bold]")
+    try:
+        result = gen.generate_from_signal(signal)
+        console.print()
+        console.print(Panel(
+            result.get("caption", "No caption generated"),
+            title="Generated Caption",
+            border_style="green",
+        ))
+        if result.get("hashtags"):
+            console.print(f"[dim]Hashtags: {' '.join(result['hashtags'])}[/dim]")
+        if result.get("thread"):
+            console.print("[dim]Thread:[/dim]")
+            for t in result["thread"]:
+                console.print(f"  [dim]{t}[/dim]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
 # ── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

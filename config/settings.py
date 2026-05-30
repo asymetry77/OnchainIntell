@@ -37,9 +37,36 @@ REQUEST_TIMEOUT_SECONDS = 30
 REQUEST_MAX_RETRIES     = 3
 REQUEST_RETRY_DELAY     = 2.0
 
+# ── THRESHOLDS ────────────────────────────────────────────────────────────────
+WHALE_THRESHOLD_USD     = float(os.getenv("WHALE_THRESHOLD_USD", "100000"))
+BIG_WHALE_THRESHOLD_USD = float(os.getenv("BIG_WHALE_THRESHOLD_USD", "1000000"))
+EXCHANGE_SURGE_MULTIPLIER = float(os.getenv("EXCHANGE_SURGE_MULTIPLIER", "2.0"))
+PRE_DUMP_WINDOW_HOURS   = int(os.getenv("PRE_DUMP_WINDOW_HOURS", "6"))
+MIN_ACCUMULATION_WALLETS = int(os.getenv("MIN_ACCUMULATION_WALLETS", "3"))
+
+# ── EVIDENCE SCORING ─────────────────────────────────────────────────────────
+SCORE_WEIGHT = {
+    "named_entity":       30,
+    "amount_over_100k":   15,
+    "amount_over_1m":     10,
+    "cex_destination":    20,
+    "within_24h":         10,
+    "volume_spike":       10,
+    "multi_transaction":   5,
+}
+
 # ── SCANNING CONFIG ───────────────────────────────────────────────────────────
 DEFAULT_LIMIT        = int(os.getenv("DEFAULT_LIMIT", "20"))
 SCAN_INTERVAL_HOURS  = int(os.getenv("SCAN_INTERVAL_HOURS", "6"))
+
+# ── MIMO AI ───────────────────────────────────────────────────────────────────
+MIMO_API_KEY   = os.getenv("MIMO_API_KEY", "")
+MIMO_BASE_URL  = os.getenv("MIMO_BASE_URL", "https://token-plan-sgp.xiaomimimo.com/v1")
+MIMO_MODEL     = os.getenv("MIMO_MODEL", "mimo-v2.5")
+
+# ── AUTO-POST ─────────────────────────────────────────────────────────────────
+AUTO_POST_ENABLED   = os.getenv("AUTO_POST_ENABLED", "false").lower() == "true"
+AUTO_POST_MIN_SCORE = int(os.getenv("AUTO_POST_MIN_SCORE", "85"))
 
 # Ensure output directories exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)

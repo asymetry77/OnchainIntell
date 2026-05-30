@@ -82,6 +82,16 @@ class WalletTracker:
         data = self._load_watchlist()
         return next((w for w in data["wallets"] if w["address"] == address), None)
 
+    def _update_wallet_label(self, address: str, label: str):
+        """Update a wallet's label in the watchlist if it was empty."""
+        data = self._load_watchlist()
+        for w in data["wallets"]:
+            if w["address"] == address and not w.get("label"):
+                w["label"] = label
+                self._save_watchlist(data)
+                logger.info(f"Label updated: {address} -> {label}")
+                break
+
     # ── DISCOVERY ─────────────────────────────────────────────────────────
 
     # Skip L1s, stables, wrapped tokens — we want altcoins/meme coins
@@ -194,7 +204,8 @@ class WalletTracker:
 
                     wallet = self.add_wallet(
                         addr, label=label,
-                        token_source=token["symbol"]
+                        token_source=token["symbol"],
+                        token_name=token["name"]
                     )
                     wallet["in_usd"] = in_usd
                     wallet["out_usd"] = out_usd
@@ -316,10 +327,27 @@ class WalletTracker:
         }
 
         for wallet in wallets[:DISCOVERY_MAX_WALLETS]:
-            entry = {"address": wallet["address"], "label": wallet.get("label", "")}
+            entry = {
+                "address": wallet["address"],
+                "label": wallet.get("label", ""),
+                "token_source": wallet.get("token_source", ""),
+            }
             try:
                 intel = self.client.get_address_intelligence(wallet["address"])
+                # Enrich label
+                lbl = intel.get("arkhamLabel", "")
+                if isinstance(lbl, dict):
+                    lbl = lbl.get("name", "")
+                if lbl and not entry["label"]:
+                    entry["label"] = lbl
+                    # Update watchlist with discovered label
+                    self._update_wallet_label(wallet["address"], lbl)
+
                 entity = intel.get("arkhamEntity", {})
+                entity_name = entity.get("name", "") if isinstance(entity, dict) else ""
+                if entity_name:
+                    entry["entity"] = entity_name
+
                 slug = entity.get("slug") if isinstance(entity, dict) else None
                 if slug:
                     balance = self.client.get_entity_balance(slug)
@@ -331,6 +359,21 @@ class WalletTracker:
             except ArkhamAPIError:
                 entry["total_usd"] = 0
                 entry["balances"] = []
+
+            # Get 24h transfer activity
+            try:
+                transfers = self.client.get_transfers(
+                    base=wallet["address"], time_last="24h", limit=5
+                )
+                entry["activity_24h"] = {
+                    "transfer_count": len(transfers),
+                    "total_in_usd": sum(t.get("historicalUSD", 0) or 0 for t in transfers if t.get("toAddress", "") == wallet["address"]),
+                    "total_out_usd": sum(t.get("historicalUSD", 0) or 0 for t in transfers if t.get("fromAddress", "") == wallet["address"]),
+                    "tokens": list(set(t.get("tokenSymbol", "") for t in transfers if t.get("tokenSymbol"))),
+                }
+            except ArkhamAPIError:
+                entry["activity_24h"] = {"transfer_count": 0, "total_in_usd": 0, "total_out_usd": 0, "tokens": []}
+
             snapshot["wallets"].append(entry)
 
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

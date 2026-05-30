@@ -25,6 +25,8 @@ from config.settings import REPORTS_DIR, SNAPSHOT_DIR, WATCHLIST_PATH
 from core.arkham_client import ArkhamClient, ArkhamAPIError
 from core.wallet_tracker import WalletTracker
 from core.report_generator import ReportGenerator
+from core.caption_generator import CaptionGenerator
+from core.signal_detector import SignalDetector
 from utils.helpers import format_usd, truncate_address
 
 logging.basicConfig(level=logging.INFO)
@@ -243,6 +245,68 @@ def get_alerts(min_usd: float = 500000):
     try:
         alerts = tracker.get_alerts(min_usd=min_usd)
         return {"success": True, "alerts": alerts, "count": len(alerts)}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, detail=str(e))
+
+
+# ── SIGNAL DETECTION ─────────────────────────────────────────────────────────
+
+@app.get("/api/signals")
+def detect_signals(hours: int = 24, min_usd: float = 100000):
+    detector = SignalDetector()
+    try:
+        signals = detector.detect_all(hours=hours, min_usd=min_usd)
+        return {"success": True, "signals": signals, "count": len(signals)}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, detail=str(e))
+
+
+# ── CAPTION GENERATION ───────────────────────────────────────────────────────
+
+class CaptionRequest(BaseModel):
+    signal_type: str = "whale_buy"
+    entity: str = ""
+    label: str = ""
+    action: str = "bought"
+    amount_usd: float = 0
+    token: str = ""
+    chain: str = ""
+    tx_hash: str = ""
+    description: str = ""
+    wallet_count: int = 0
+    total_usd: float = 0
+
+@app.post("/api/caption/generate")
+def generate_caption(req: CaptionRequest):
+    gen = CaptionGenerator()
+    try:
+        signal = req.model_dump()
+        result = gen.generate_from_signal(signal)
+        return {"success": True, "caption": result}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        raise HTTPException(500, detail=str(e))
+
+@app.post("/api/caption/from-alert")
+def caption_from_alert(alert: dict):
+    """Generate caption directly from an alert dict."""
+    gen = CaptionGenerator()
+    try:
+        signal = {
+            "signal_type": "whale_buy",
+            "entity": alert.get("label", ""),
+            "label": alert.get("label", ""),
+            "action": "transferred",
+            "amount_usd": alert.get("amount_usd", 0),
+            "token": alert.get("token", ""),
+            "chain": alert.get("chain", ""),
+            "tx_hash": alert.get("tx_hash", ""),
+            "timestamp": alert.get("timestamp", ""),
+        }
+        result = gen.generate_from_signal(signal)
+        return {"success": True, "caption": result}
     except Exception as e:
         logger.error(traceback.format_exc())
         raise HTTPException(500, detail=str(e))
